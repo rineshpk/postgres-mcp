@@ -1,0 +1,16 @@
+{
+  "servers": {
+    "PostgresMcp": {
+      "type": "stdio",
+      "command": "/usr/local/share/dotnet/dotnet",
+      "args": [
+        "run",
+        "--project",
+        "src/PostgresMcp.Server/PostgresMcp.Server.csproj"
+      ],
+      "env": {
+        "POSTGRES_CONNECTION": "Host=localhost;Database=vector_db;Username=rinesh"
+      }
+    }
+  }
+}

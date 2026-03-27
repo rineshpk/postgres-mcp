@@ -1,0 +1,28 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+  "name": "io.github.rineshpk/postgres-mcp",
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "nuget",
+      "registryBaseUrl": "https://api.nuget.org",
+      "identifier": "RineshPK.PostgresMcp",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "POSTGRES_CONNECTION",
+          "value": "{connection_string}",
+          "variables": {
+            "connection_string": {
+              "description": "PostgreSQL connection string",
+              "isRequired": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
