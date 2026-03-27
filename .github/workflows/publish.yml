@@ -48,6 +48,7 @@ jobs:
             --no-restore \
             --configuration Release \
             -p:Version=${{ steps.version.outputs.value }} \
+            -p:BuildInParallel=false \
             --output ./nupkg
 
       - name: Push to NuGet

@@ -53,4 +53,5 @@ jobs:
             --no-restore \
             --configuration Release \
             -p:Version=0.0.0-ci \
+            -p:BuildInParallel=false \
             --output ./nupkg
