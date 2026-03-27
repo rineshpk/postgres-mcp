@@ -50,6 +50,7 @@ jobs:
       - name: Pack (dry run)
         run: |
           dotnet pack ${{ env.PROJECT }} \
+            --no-restore \
             --configuration Release \
             -p:Version=0.0.0-ci \
             --output ./nupkg

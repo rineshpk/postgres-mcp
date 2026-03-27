@@ -42,13 +42,10 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore ${{ env.PROJECT }}
 
-      - name: Build
-        run: dotnet build ${{ env.PROJECT }} --no-restore --configuration Release
-
       - name: Pack
         run: |
           dotnet pack ${{ env.PROJECT }} \
-            --no-build \
+            --no-restore \
             --configuration Release \
             -p:Version=${{ steps.version.outputs.value }} \
             --output ./nupkg
