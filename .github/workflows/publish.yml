@@ -14,7 +14,71 @@ env:
   PROJECT: src/PostgresMcp.Server/PostgresMcp.Server.csproj
 
 jobs:
-  publish:
+  resolve-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+    steps:
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
+          else
+            VERSION="${{ inputs.version }}"
+          fi
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
+  publish-native:
+    needs: resolve-version
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: ubuntu-24.04-arm
+            rid: linux-arm64
+          - os: ubuntu-latest
+            rid: linux-musl-x64
+            extra-args: -p:PublishReadyToRun=false
+          - os: windows-latest
+            rid: win-x64
+          - os: windows-11-arm
+            rid: win-arm64
+          - os: macos-latest
+            rid: osx-arm64
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.x"
+
+      - name: Restore
+        run: dotnet restore ${{ env.PROJECT }} -r ${{ matrix.rid }}
+
+      - name: Publish
+        run: |
+          dotnet publish ${{ env.PROJECT }} \
+            --configuration Release \
+            --no-restore \
+            -r ${{ matrix.rid }} \
+            -p:Version=${{ needs.resolve-version.outputs.version }} \
+            ${{ matrix.extra-args }} \
+            --output ./publish/${{ matrix.rid }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-${{ matrix.rid }}
+          path: ./publish/${{ matrix.rid }}
+
+  pack-and-push:
+    needs: [resolve-version, publish-native]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -27,19 +91,13 @@ jobs:
         with:
           dotnet-version: "10.x"
 
-      - name: Resolve version
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            # Strip leading 'v' from tag (e.g. v1.2.3 → 1.2.3)
-            VERSION="${{ github.event.release.tag_name }}"
-            VERSION="${VERSION#v}"
-          else
-            VERSION="${{ inputs.version }}"
-          fi
-          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Download all publish artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: publish-*
+          path: ./publish
 
-      - name: Restore dependencies
+      - name: Restore
         run: dotnet restore ${{ env.PROJECT }}
 
       - name: Pack
@@ -47,8 +105,9 @@ jobs:
           dotnet pack ${{ env.PROJECT }} \
             --no-restore \
             --configuration Release \
-            -p:Version=${{ steps.version.outputs.value }} \
-            -p:BuildInParallel=false \
+            -p:Version=${{ needs.resolve-version.outputs.version }} \
+            -p:PublishSingleFile=false \
+            -p:SelfContained=false \
             --output ./nupkg
 
       - name: Push to NuGet
